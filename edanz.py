@@ -14,7 +14,7 @@ def main():
     exitProg = False
 
     # Print options
-    print('Editing database manager v. 0.0.1')
+    print('Editing database manager v. 0.0.2')
 
     while not exitProg:
     
@@ -44,6 +44,7 @@ def main():
                 for msg in msgList:
                     jobList.append(parse_mail(msg))
 
+                nameList = buildNameList(jobList)
                 jobsLoaded = True
                 
         elif choice == '2':
@@ -59,8 +60,10 @@ def main():
 
             # Load job list
             jobList = loadJobList('jobdata.pkl')
+            nameList = buildNameList(jobList)
             jobsLoaded = True
             print('Job list loaded.')
+            print(nameList)
 
         elif choice == '4':
 
@@ -88,6 +91,17 @@ def main():
 
     # We're done here!
     sys.exit()
+
+
+def buildNameList(jobs):
+
+    names = []
+
+    for job in jobs:
+
+        names.append(job.get_name())
+
+    return names
    
     
 # Given a list of Job objects and a filename, pickle the list to a binary file.
@@ -316,10 +330,14 @@ def parse_mail(msg):
                 elif '***' not in line:
                     message = message + line
 
+        # Check if jobs is completed/downloaded (placeholders for now)
+        is_completed = False
+        is_downloaded = False
+
         # Add the last few things
         job.add_numbers(num_pages, fee)
         job.add_links(links)
-        job.add_flags(do_refs, do_figs, do_tabs)
+        job.add_flags(do_refs, do_figs, do_tabs, is_completed, is_downloaded)
 
         return job
 
@@ -330,8 +348,6 @@ class Job:
 
         self.name = name
         self.stage = ""
-        self.isRev = False
-        self.isPBP = False
         self.message = "\n"
         self.doReferences = False
         self.doFigures = False
@@ -348,7 +364,8 @@ class Job:
         self.acceptLink = ""
         self.declineLink = ""
         self.returnLink = ""
-        self.completed = False
+        self.isCompleted = False
+        self.isDownloaded = False
 
     def __str__(self):
 
@@ -385,7 +402,14 @@ class Job:
 
         text = text + '\nCompleted: '
 
-        if self.completed:
+        if self.isCompleted:
+            text2 = 'Yes\n'
+        else:
+            text2 = 'No\n'
+
+        text = text + text2 + 'Downloaded: '
+
+        if self.isDownloaded:
             text2 = 'Yes\n'
         else:
             text2 = 'No\n'
@@ -401,10 +425,12 @@ class Job:
     def add_message(self, message):
         self.message = message
 
-    def add_flags(self, do_refs, do_figs, do_tabs):
+    def add_flags(self, do_refs, do_figs, do_tabs, is_completed, is_downloaded):
         self.doReferences = do_refs
         self.doFigures = do_figs
         self.doTables = do_tabs
+        self.isCompleted = is_completed
+        self.isDownoaded = is_downloaded
 
     def add_due_date(self, due_date):
         self.dueDate = due_date
@@ -432,6 +458,10 @@ class Job:
         self.declineLink = links[3]
         self.returnLink = links[4]
 
+
+    # Get parameters
+    def get_name(self):
+        return self.name
 
 
 main()
