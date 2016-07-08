@@ -6,15 +6,18 @@ import pickle
 from time import mktime
 from datetime import *
 from dateutil.parser import *
+import requests
+import calendar
 
 
 def main():
 
     jobsLoaded = False
     exitProg = False
+    curr = 'CAD'
 
     # Print options
-    print('Editing database manager v. 0.0.3')
+    print('Editing database manager v. 0.0.4')
 
     while not exitProg:
     
@@ -24,7 +27,8 @@ def main():
         print('3: load job list')
         print('4: print current job list')
         print('5: clear current job list')
-        print('6: quit')
+        print('6: financial options')
+        print('7: quit')
 
         choice = input('What do you want to do? ')
         if choice == '1':
@@ -83,6 +87,93 @@ def main():
 
         elif choice == '6':
 
+            if not jobsLoaded:
+                print('ERROR: No job list loaded.')
+            else:
+
+                exitFinance = False
+
+                while not exitFinance:
+
+                    # Get conversion rates
+                    url = ('https://currency-api.appspot.com/api/%s/%s.json') % ('JPY', 'CAD')
+                    r = requests.get(url)
+                    yenRate = float(r.json()['rate'])
+                    url = ('https://currency-api.appspot.com/api/%s/%s.json') % ('RMB', 'CAD')
+                    r = requests.get(url)
+                    rmbRate = float(r.json()['rate'])
+                    url = ('https://currency-api.appspot.com/api/%s/%s.json') % ('USD', 'CAD')
+                    r = requests.get(url)
+                    usdRate = float(r.json()['rate'])
+                    rates = [yenRate, rmbRate, usdRate]
+
+                    print('\nFinance options')
+                    print('Current currency:',curr)
+                    print('1: print total income')
+                    print('2: print monthly income')
+                    print('3: change currency')
+                    print('4: return to main menu')
+                    print('5: quit')
+
+                    choice = input('What do you want to do? ')
+
+                    if choice == '1':
+
+                        # Add up income
+                        totalIncome = 0
+                        for name,job in jobDict.items():
+                            totalIncome += job.get_fee(rates)                                              
+
+                        print('Total income: ${:.2f}'.format(totalIncome))
+
+                    elif choice == '2':
+
+                        # First go through and snag all different dates
+                        dateList = []
+                        for name,job in jobDict.items():
+                            aDate = job.assignDate
+                            
+                            if aDate.month not in dateList:
+                                dateList.append(aDate.month)
+
+                        # Sort list by date
+                        dateList.sort()
+
+                        # Now go through each month
+                        incomeByDate = {}
+                        for d in dateList:
+                            incomeByDate[d] = 0
+                            for name,job in jobDict.items():
+                                if job.assignDate.month == d:
+                                    incomeByDate[d] += job.get_fee(rates)
+
+                        # Finally print income by date
+                        for d,val in incomeByDate.items():
+    
+                            print('{}: ${:.2f}'.format(calendar.month_name[d], val))
+                                    
+
+                    elif choice == '3':
+
+                        print('Change currency to what?')
+                        
+
+                    elif choice == '4':
+
+                        print('Heading back to main menu...')
+                        exitFinance = True
+
+                    elif choice == '5':
+
+                        print('Bye!')
+                        exitFinance = True
+                        exitProg = True
+
+                    else:
+                        print('ERROR: Input not recognised. Try again.')
+
+        elif choice == '7':
+
             print('Bye!')
             exitProg = True
             
@@ -96,9 +187,9 @@ def main():
 def addJob(jobs, job):
 
     # check if job is already in dict
-    if job.get_name() not in jobs:
+    if job.name not in jobs:
 
-        jobs[job.get_name()] = job
+        jobs[job.name] = job
    
     
 # Given a list of Job objects and a filename, pickle the list to a binary file.
@@ -142,7 +233,7 @@ def getMessages(address):
     if rv == 'OK':
 
         # Format date correctly    
-        searchDate = date.today()-timedelta(days=10)
+        searchDate = date.today()-timedelta(days=190)
         searchDate = searchDate.strftime('%d-%b-%Y')
 
         # Pull emails in date range
@@ -267,7 +358,7 @@ def parse_mail(msg):
                 elif 'Fee:' in line:
 
                     lines = line.split(' ')
-                    fee = int(lines[1])
+                    fee = lines[1]
                     job.add_currency(lines[2])
 
                 elif 'Journal' in line:
@@ -443,7 +534,11 @@ class Job:
         self.fee = fee
 
     def add_currency(self, currency):
-        self.currency = currency
+
+        if currency == 'Yen':
+            curr_abbrev = 'JPY'
+        else: curr_abbrev = currency
+        self.currency = curr_abbrev
 
     def add_journal(self, journal):
         self.journal = journal
@@ -457,8 +552,20 @@ class Job:
 
 
     # Get parameters
-    def get_name(self):
-        return self.name
+    def get_fee(self, rates):
+
+        # Convert fee for each rate
+        try:
+            if self.currency == 'JPY':
+                fee = float(self.fee)*rates[0]
+            elif self.currency == 'RMB':
+                fee = float(self.fee)*rates[1]
+            else:
+                fee = float(self.fee)*rates[2]
+        except ValueError:
+            fee = 0
+        
+        return fee
 
 
 main()
