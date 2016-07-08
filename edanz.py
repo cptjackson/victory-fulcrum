@@ -14,7 +14,7 @@ def main():
     exitProg = False
 
     # Print options
-    print('Editing database manager v. 0.0.2')
+    print('Editing database manager v. 0.0.3')
 
     while not exitProg:
     
@@ -30,7 +30,7 @@ def main():
         if choice == '1':
 
             # Clear current list
-            jobList = []
+            jobDict = {}
 
             # Input email
             address = input('Enter email: ')
@@ -42,9 +42,11 @@ def main():
 
                 # Now parse those emails and build the job list
                 for msg in msgList:
-                    jobList.append(parse_mail(msg))
 
-                nameList = buildNameList(jobList)
+                    job = parse_mail(msg)
+
+                    addJob(jobDict, job)
+                    
                 jobsLoaded = True
                 
         elif choice == '2':
@@ -53,17 +55,15 @@ def main():
                 print('ERROR: No job list loaded.')
             else:
                 # Save job list
-                saveJobList(jobList,'jobdata.pkl')
+                saveJobDict(jobDict,'jobdata.pkl')
                 print('Job list saved.')
             
         elif choice == '3':
 
             # Load job list
-            jobList = loadJobList('jobdata.pkl')
-            nameList = buildNameList(jobList)
+            jobDict = loadJobDict('jobdata.pkl')
             jobsLoaded = True
             print('Job list loaded.')
-            print(nameList)
 
         elif choice == '4':
 
@@ -71,13 +71,13 @@ def main():
                 print('ERROR: No job list loaded.')
             else:
                 # Print job list
-                for job in jobList:
+                for name,job in jobDict.items():
                     print('\n')
                     print(job)
                     
         elif choice == '5':
 
-            jobList = []
+            jobDict = {}
             jobsLoaded = False
             print('Job list cleared.')
 
@@ -93,19 +93,16 @@ def main():
     sys.exit()
 
 
-def buildNameList(jobs):
+def addJob(jobs, job):
 
-    names = []
+    # check if job is already in dict
+    if job.get_name() not in jobs:
 
-    for job in jobs:
-
-        names.append(job.get_name())
-
-    return names
+        jobs[job.get_name()] = job
    
     
 # Given a list of Job objects and a filename, pickle the list to a binary file.
-def saveJobList(jobs,fname):
+def saveJobDict(jobs,fname):
 
     f = open(fname, 'wb')
 
@@ -115,7 +112,7 @@ def saveJobList(jobs,fname):
 
 
 # Given a filename, unpickle a list of Job objects from a binary file and return it.
-def loadJobList(fname):
+def loadJobDict(fname):
 
     f = open(fname, 'rb')
 
