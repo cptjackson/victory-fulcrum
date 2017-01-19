@@ -28,7 +28,8 @@ def main():
         print('4: print current job list')
         print('5: clear current job list')
         print('6: financial options')
-        print('7: quit')
+        print('7: generate invoice')
+        print('8: quit')
 
         choice = input('What do you want to do? ')
         if choice == '1':
@@ -174,6 +175,10 @@ def main():
 
         elif choice == '7':
 
+            
+
+        elif choice == '8':
+
             print('Bye!')
             exitProg = True
             
@@ -233,7 +238,7 @@ def getMessages(address):
     if rv == 'OK':
 
         # Format date correctly    
-        searchDate = date.today()-timedelta(days=190)
+        searchDate = date.today()-timedelta(days=19)
         searchDate = searchDate.strftime('%d-%b-%Y')
 
         # Pull emails in date range
@@ -549,7 +554,6 @@ class Job:
         self.acceptLink = links[2]
         self.declineLink = links[3]
         self.returnLink = links[4]
-
 
     # Get parameters
     def get_fee(self, rates):
